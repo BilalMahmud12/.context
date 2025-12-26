@@ -1,4 +1,4 @@
-# AgentsShell Workflow
+# AgentShell Workflow
 
 Daily operation flow for AI-augmented development.
 

@@ -54,7 +54,7 @@ refactor/052-validation-service
 **Projects:**
 - Cast Club: `main`
 - Origin Stack: `main`
-- AgentsShell: `main`
+- AgentShell: `main`
 
 **Never:**
 - Force push to main/master
@@ -178,7 +178,7 @@ Thumbs.db
 *.swp
 *.swo
 
-# AgentsShell
+# AgentShell
 .state/
 
 # Logs

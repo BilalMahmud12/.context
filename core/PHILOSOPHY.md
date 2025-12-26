@@ -1,4 +1,4 @@
-# AgentsShell Philosophy
+# AgentShell Philosophy
 
 Core principles for AI-augmented development.
 
@@ -12,7 +12,7 @@ Like Redux for projects. Any new session loads state from docs and continues. Th
 
 ```
 Traditional:    Code → Documentation (afterthought)
-AgentsShell:    Documentation → Code (state drives execution)
+AgentShell:     Documentation → Code (state drives execution)
 ```
 
 ---
@@ -53,7 +53,7 @@ Human (prose) → Aang (task.md) → M-O (executes) → Git (commits)
 **2. Specification, Not Interpretation**
 
 Traditional: "Fix the auth bug" → AI interprets → Maybe right, maybe wrong
-AgentsShell: task.md specifies exactly what to do → No interpretation → Precise execution
+AgentShell: task.md specifies exactly what to do → No interpretation → Precise execution
 
 **3. Scope is Sacred**
 
@@ -88,7 +88,7 @@ AI doesn't get everything. AI gets exactly what it needs.
 
 ## Self-Proof
 
-AgentsShell validates itself by being used to build the projects that use it.
+AgentShell validates itself by being used to build the projects that use it.
 
 The methodology documents the methodology.
 The system builds the system.

@@ -2,10 +2,10 @@
   "version": "1.0.0",
   "updated": "2024-12-26T03:40:00Z",
   "repositories": {
-    "agentsshell": {
-      "name": "AgentsShell Framework",
-      "remote": "git@github.com:BilalMahmud12/agentsshell.git",
-      "local_path": "~/Repository/agentsshell",
+    "agentshell": {
+      "name": "AgentShell Framework",
+      "remote": "git@github.com:BilalMahmud12/.context.git",
+      "local_path": "~/.context",
       "type": "docs",
       "status": "active",
       "agents": {
@@ -14,7 +14,7 @@
         "zuko": false
       },
       "current_branch": "main",
-      "agentsshell_version": "1.0.0"
+      "agentshell_version": "1.0.0"
     },
     "castclub": {
       "name": "Cast Club",
@@ -30,7 +30,7 @@
       "current_branch": "main",
       "last_task": "049",
       "next_task": "050",
-      "agentsshell_version": "1.0.0"
+      "agentshell_version": "1.0.0"
     }
   }
 }

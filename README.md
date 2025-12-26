@@ -1,6 +1,6 @@
 # .context
 
-Global context for AgentsShell AI-augmented development across all machines.
+Global context for AgentShell AI-augmented development across all machines.
 
 ---
 
