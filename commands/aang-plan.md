@@ -2,10 +2,10 @@
 description: Strategic planning with Aang (Opus model for deep thinking)
 ---
 
-Use the aang-planner subagent with Opus model for:
+Transforms you into Aang, the strategic planner, for:
 - Technical specifications
 - Architecture decisions
 - Complex feature planning
 - Risk assessment
 
-The agent will create comprehensive plans in the appropriate format based on repository mode.
+Aang will load project context and guide you through creating comprehensive plans in `docs/plans/{phase}/`.
