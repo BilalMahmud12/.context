@@ -194,6 +194,58 @@ if [ -f "$CONTEXT_DIR/bilal/PATTERNS.md" ]; then
     print_success "Created docs/context/PATTERNS.md"
 fi
 
+# Create sessions INDEX.md
+cat > docs/sessions/INDEX.md << 'INDEXEOF'
+# Session Index
+
+Quick reference to all distilled sessions for this project.
+
+---
+
+## Sessions
+
+| Date | Session | Agent | Keywords |
+|------|---------|-------|----------|
+| _No sessions yet_ | - | - | - |
+
+---
+
+## How to Distill a Session
+
+After completing a Claude Code session:
+
+```bash
+# List recent sessions
+~/.context/scripts/distill-session.sh --list
+
+# Distill the latest session
+~/.context/scripts/distill-session.sh --latest
+
+# OR distill a specific session
+~/.context/scripts/distill-session.sh <session-id>
+```
+
+This creates a draft in `docs/sessions/*.draft.md` for review.
+
+After review:
+```bash
+# Finalize (remove .draft)
+mv docs/sessions/YYYY-MM-DD-topic.draft.md docs/sessions/YYYY-MM-DD-topic.md
+
+# Update this INDEX.md with the new entry
+
+# Commit
+git add docs/sessions/
+git commit -m "docs: Add session summary for [topic]"
+```
+
+---
+
+**AgentShell v1.0.0** | Project Documentation
+INDEXEOF
+
+print_success "Created docs/sessions/INDEX.md"
+
 # Create project README
 cat > docs/README.md << EOF
 # $PROJECT_NAME Documentation

@@ -1,0 +1,140 @@
+# Session: {{ title }}
+
+**Date:** {{ date }}
+**Duration:** {{ duration }}
+**Session ID:** `{{ session_id }}`
+**Branch:** `{{ branch }}`
+**Agent:** {{ agent }} ({{ model }})
+
+---
+
+## Summary
+
+{{ summary_paragraph }}
+
+---
+
+## Context
+
+### What Was Requested
+
+{{ user_requests }}
+
+### Starting State
+
+{{ starting_state }}
+
+---
+
+## Session Narrative
+
+{{ narrative }}
+
+---
+
+{% if key_decisions %}
+## Key Decisions
+
+| Decision | Reasoning | Impact |
+|----------|-----------|--------|
+{% for decision in key_decisions %}
+| {{ decision.decision }} | {{ decision.reasoning }} | {{ decision.impact }} |
+{% endfor %}
+
+---
+
+{% endif %}
+## Files Changed
+
+{% if files_created %}
+### Created
+{% for file in files_created %}
+- [`{{ file }}`]({{ file }})
+{% endfor %}
+
+{% endif %}
+{% if files_modified %}
+### Modified
+{% for file in files_modified %}
+- [`{{ file }}`]({{ file }})
+{% endfor %}
+
+{% endif %}
+{% if files_deleted %}
+### Deleted
+{% for file in files_deleted %}
+- `{{ file }}`
+{% endfor %}
+
+{% endif %}
+{% if not files_created and not files_modified and not files_deleted %}
+_No files were modified in this session._
+
+{% endif %}
+---
+
+{% if commands %}
+## Commands Run
+
+{% for cmd in commands %}
+```bash
+{% if cmd.description %}# {{ cmd.description }}{% endif %}
+$ {{ cmd.command }}
+{% if cmd.output %}{{ cmd.output }}{% endif %}
+```
+
+{% endfor %}
+---
+
+{% endif %}
+{% if related_tasks %}
+## Related Tasks
+
+{% for task in related_tasks %}
+- [Task {{ task }}](../tasks/{{ task }})
+{% endfor %}
+
+---
+
+{% endif %}
+{% if blockers %}
+## Blockers & Resolutions
+
+| Blocker | Resolution | Lesson |
+|---------|------------|--------|
+{% for blocker in blockers %}
+| {{ blocker.blocker }} | {{ blocker.resolution }} | {{ blocker.lesson }} |
+{% endfor %}
+
+---
+
+{% endif %}
+{% if code_snippets %}
+## Code Snippets
+
+{% for snippet in code_snippets %}
+### {{ snippet.title }}
+
+```{{ snippet.language }}
+{{ snippet.code }}
+```
+
+**Why:** {{ snippet.explanation }}
+
+{% endfor %}
+---
+
+{% endif %}
+## Search Keywords
+
+{% for keyword in search_keywords %}`{{ keyword }}`{% if not loop.last %}, {% endif %}{% endfor %}
+
+---
+
+## Raw Session Reference
+
+Full session: `{{ raw_session_path }}`
+
+---
+
+*Distilled on {{ date }} | AgentShell v1.0.0*
