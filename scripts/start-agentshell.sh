@@ -1,478 +1,380 @@
 #!/usr/bin/env bash
-#
-# AgentShell Project Bootstrap Script
-#
-# Usage:
-#   ~/.context/scripts/start-agentshell.sh <project-name> [project-type]
-#
-# Examples:
-#   start-agentshell.sh my-django-app python
-#   start-agentshell.sh my-api laravel
-#   start-agentshell.sh my-frontend react
-#
+set -e
 
-set -e  # Exit on error
-
-# Colors for output
-RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
 
-# Configuration
-CONTEXT_DIR="$HOME/.context"
-REPO_BASE="$HOME/Repository"
-
-# Functions
-print_header() {
-    echo -e "\n${BLUE}=== $1 ===${NC}\n"
-}
-
-print_success() {
-    echo -e "${GREEN}✓${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}✗${NC} $1"
-}
-
-print_info() {
-    echo -e "${YELLOW}→${NC} $1"
-}
-
-# Validate input
-if [ -z "$1" ]; then
-    print_error "Project name is required"
-    echo ""
-    echo "Usage: $(basename $0) <project-name> [project-type]"
-    echo ""
-    echo "Examples:"
-    echo "  $(basename $0) my-django-app python"
-    echo "  $(basename $0) my-api laravel"
-    echo "  $(basename $0) my-frontend react"
-    exit 1
-fi
-
-PROJECT_NAME="$1"
-PROJECT_TYPE="${2:-general}"
-PROJECT_PATH="$REPO_BASE/$PROJECT_NAME"
-
-# Check if project already exists
-if [ -d "$PROJECT_PATH" ]; then
-    print_error "Project directory already exists: $PROJECT_PATH"
-    exit 1
-fi
-
-# Start bootstrap process
-print_header "AgentShell Project Bootstrap"
-
-echo "Project: $PROJECT_NAME"
-echo "Type: $PROJECT_TYPE"
-echo "Path: $PROJECT_PATH"
+echo -e "${BLUE}╔════════════════════════════════╗${NC}"
+echo -e "${BLUE}║   AgentShell v2.0 Setup        ║${NC}"
+echo -e "${BLUE}╚════════════════════════════════╝${NC}"
 echo ""
 
-# Create project directory
-print_info "Creating project directory..."
-mkdir -p "$PROJECT_PATH"
-cd "$PROJECT_PATH"
-print_success "Created $PROJECT_PATH"
+REPOSITORY_NAME=$(basename "$(pwd)")
+echo -e "${BLUE}→${NC} Repository: ${GREEN}$REPOSITORY_NAME${NC}"
+echo ""
 
-# Initialize git
-print_info "Initializing git repository..."
-git init -q
-print_success "Git repository initialized"
+# ============================================================================
+# MIGRATION DETECTION
+# ============================================================================
 
-# Create AgentShell directory structure
-print_info "Creating AgentShell structure..."
+MIGRATION_TYPE="none"
 
-# .state/ - Ephemeral execution state (NOT git-tracked)
-mkdir -p .state/{queue,graph,cache,sessions}
+# Check for Kernel
+if [ -f ".kernel/config.yaml" ]; then
+    MIGRATION_TYPE="kernel"
+    echo -e "${YELLOW}⚠ Kernel v2.3 detected${NC}"
+    echo "This will migrate from Kernel to AgentShell v2.0"
+    echo ""
+    echo "Changes:"
+    echo "  • .kernel/ → .kernel-archive/ (preserved)"
+    echo "  • .channel/ → .channel-archive/ (preserved)"
+    echo "  • .docs/tasks/ → .docs/tasks/ (no change)"
+    echo "  • Creates: .agentshell.config.json"
+    echo ""
+    read -p "Proceed with migration? (y/n): " proceed
 
-cat > .state/README.md << 'EOF'
-# .state/
+    if [ "$proceed" != "y" ]; then
+        echo "Cancelled. No changes made."
+        exit 0
+    fi
+fi
 
-**Execution state for this project (NOT git-tracked)**
+# Check for AgentShell v1.0
+if [ -d "docs/agents" ] && [ -f "docs/agents/AANG.md" ] && [ ! -f ".agentshell.config.json" ]; then
+    MIGRATION_TYPE="agentshell_v1"
+    echo -e "${YELLOW}⚠ AgentShell v1.0 detected${NC}"
+    echo "This will upgrade to AgentShell v2.0"
+    echo ""
+    echo "Preservation:"
+    echo "  • docs/agents/ → PRESERVED (documentation)"
+    echo "  • docs/tasks/ → PRESERVED"
+    echo "  • docs/sessions/ → PRESERVED"
+    echo ""
+    echo "New additions:"
+    echo "  • .agentshell.config.json (git-excluded)"
+    echo "  • .state/ directory"
+    echo ""
+    read -p "Proceed with upgrade? (y/n): " proceed
 
-This folder contains ephemeral, machine-local execution state.
+    if [ "$proceed" != "y" ]; then
+        echo "Cancelled. No changes made."
+        exit 0
+    fi
+fi
 
----
+# ============================================================================
+# MIGRATION: KERNEL → AGENTSHELL
+# ============================================================================
 
-## What is This?
+if [ "$MIGRATION_TYPE" = "kernel" ]; then
+    echo ""
+    echo -e "${BLUE}→${NC} Migrating from Kernel..."
 
-Redux-like state store for AgentShell execution tracking.
+    # Archive Kernel (never delete)
+    if [ -d ".kernel" ]; then
+        TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+        mv .kernel ".kernel-archive-$TIMESTAMP"
+        echo -e "${GREEN}✓${NC} Archived .kernel/ → .kernel-archive-$TIMESTAMP/"
+    fi
 
-**NOT committed to git** - Rebuilt from `docs/` if needed.
+    # Archive Channel
+    if [ -d ".channel" ]; then
+        TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+        mv .channel ".channel-archive-$TIMESTAMP"
+        echo -e "${GREEN}✓${NC} Archived .channel/ → .channel-archive-$TIMESTAMP/"
+    fi
 
----
+    # Preserve ALL .docs/ content
+    if [ -d ".docs" ]; then
+        total_files=$(find .docs -type f 2>/dev/null | wc -l | tr -d ' ')
+        echo -e "${GREEN}✓${NC} Preserved .docs/ ($total_files files) - ALL content untouched"
+    fi
 
-## Structure
+    # Preserve ALL docs/ content
+    if [ -d "docs" ]; then
+        total_files=$(find docs -type f 2>/dev/null | wc -l | tr -d ' ')
+        echo -e "${GREEN}✓${NC} Preserved docs/ ($total_files files) - ALL content untouched"
+    fi
 
-```
-.state/
-├── current.json        # Current execution state
-├── queue/              # Pending tasks
-│   └── pending.json
-├── graph/              # Task dependencies
-│   └── tasks.json
-├── cache/              # Temporary data
-└── sessions/           # Session snapshots
-```
+    # Preserve .docs/tasks/ (same location)
+    if [ -d ".docs/tasks" ]; then
+        task_count=$(find .docs/tasks -maxdepth 1 -type d | wc -l | tr -d ' ')
+        echo -e "${GREEN}✓${NC} Preserved .docs/tasks/ ($task_count tasks)"
+    fi
 
----
+    # Auto-detect mode from archived config
+    ARCHIVED_CONFIG=$(ls -t .kernel-archive-*/config.yaml 2>/dev/null | head -1)
+    if [ -n "$ARCHIVED_CONFIG" ]; then
+        JIRA_ENABLED=$(grep -A2 "jira:" "$ARCHIVED_CONFIG" | grep -q "enabled: true" && echo "true" || echo "false")
 
-## Philosophy
+        if [ "$JIRA_ENABLED" = "true" ]; then
+            MODE="jira"
+            echo -e "${GREEN}✓${NC} Detected mode: Jira (from config)"
+        else
+            MODE="simple"
+            echo -e "${GREEN}✓${NC} Detected mode: Simple (from config)"
+        fi
+    else
+        MODE="jira"  # Default for Kernel projects
+        echo -e "${YELLOW}⚠${NC} Defaulting to Jira mode"
+    fi
 
-- Machines are ephemeral containers
-- Git is source of truth
-- .state/ rebuilds from docs/ on new machines
-- Zero attachment to local state
+    echo -e "${YELLOW}ℹ${NC}  All existing files in docs/ and .docs/ remain untouched"
+
+    MIGRATION=true
+fi
+
+# ============================================================================
+# MIGRATION: AGENTSHELL V1 → V2
+# ============================================================================
+
+if [ "$MIGRATION_TYPE" = "agentshell_v1" ]; then
+    echo ""
+    echo -e "${BLUE}→${NC} Upgrading from AgentShell v1.0..."
+
+    # Preserve ALL docs/ content
+    if [ -d "docs" ]; then
+        total_files=$(find docs -type f | wc -l | tr -d ' ')
+        echo -e "${GREEN}✓${NC} Preserved docs/ ($total_files files) - ALL content untouched"
+    fi
+
+    # Preserve docs/agents/ (becomes documentation)
+    if [ -d "docs/agents" ]; then
+        agent_count=$(find docs/agents -name "*.md" | wc -l | tr -d ' ')
+        echo -e "${GREEN}✓${NC} Preserved docs/agents/ ($agent_count files) as documentation"
+    fi
+
+    # Preserve docs/tasks/
+    if [ -d "docs/tasks" ]; then
+        task_count=$(find docs/tasks -name "*.md" | wc -l | tr -d ' ')
+        echo -e "${GREEN}✓${NC} Preserved docs/tasks/ ($task_count tasks)"
+
+        # Extract next task number
+        LAST_TASK=$(ls docs/tasks/*.md 2>/dev/null | grep -Eo '[0-9]{3}' | sort -n | tail -1)
+        if [ -n "$LAST_TASK" ]; then
+            NEXT_NUMBER=$((10#$LAST_TASK + 1))
+            echo -e "${GREEN}✓${NC} Next task number: $NEXT_NUMBER"
+        else
+            NEXT_NUMBER=1
+        fi
+    fi
+
+    # Preserve docs/sessions/
+    if [ -d "docs/sessions" ]; then
+        session_count=$(find docs/sessions -name "*.md" | wc -l | tr -d ' ')
+        echo -e "${GREEN}✓${NC} Preserved docs/sessions/ ($session_count sessions)"
+    fi
+
+    # Mode is always "simple" for v1.0 upgrades
+    MODE="simple"
+    echo -e "${GREEN}✓${NC} Mode: Simple (personal repositories)"
+    echo -e "${YELLOW}ℹ${NC}  All existing files in docs/ remain untouched"
+
+    MIGRATION=true
+fi
+
+# ============================================================================
+# FRESH INSTALLATION
+# ============================================================================
+
+if [ "$MIGRATION_TYPE" = "none" ]; then
+    echo "Select AgentShell mode:"
+    echo ""
+    echo "  1) Simple - Personal repositories, git-tracked tasks"
+    echo "  2) Jira   - Enterprise repositories, Jira integration"
+    echo ""
+    read -p "Mode (1 or 2): " mode_choice
+
+    if [ "$mode_choice" = "1" ]; then
+        MODE="simple"
+        NEXT_NUMBER=1
+    elif [ "$mode_choice" = "2" ]; then
+        MODE="jira"
+    else
+        echo "Invalid choice"
+        exit 1
+    fi
+
+    MIGRATION=false
+fi
+
+echo -e "${GREEN}✓${NC} Mode: ${BLUE}$MODE${NC}"
+echo ""
+
+# ============================================================================
+# REST OF SETUP
+# ============================================================================
+
+# Gather config
+if [ "$MODE" = "jira" ]; then
+    read -p "Jira URL: " jira_url
+    read -p "Jira projects (comma-separated): " jira_projects
+    read -p "Base branch (e.g., develop): " base_branch
+else
+    base_branch="main"
+fi
+
+read -p "Build command: " build_cmd
+read -p "Test command: " test_cmd
+read -p "Lint command: " lint_cmd
+
+echo ""
+echo -e "${BLUE}→${NC} Git user configuration (for commits in this repository)"
+read -p "Git user name: " git_user_name
+read -p "Git user email: " git_user_email
+
+echo ""
+echo -e "${BLUE}→${NC} Creating structure..."
+
+# Create directories
+mkdir -p .state/queue
+
+if [ "$MODE" = "jira" ]; then
+    mkdir -p .docs/tasks
+    mkdir -p .docs/sessions
+    TASK_LOCATION=".docs/tasks"
+else
+    mkdir -p docs/tasks
+    mkdir -p docs/sessions
+    TASK_LOCATION="docs/tasks"
+fi
+
+# Generate config
+cat > .agentshell.config.json <<EOF
+{
+  "version": "2.0",
+  "mode": "$MODE",
+  "repository": {
+    "name": "$REPOSITORY_NAME"
+  },
+  "agents": {
+    "planning": "Aang",
+    "execution": "M-O"
+  },
+  "stack": {
+    "build": "$build_cmd",
+    "test": "$test_cmd",
+    "lint": "$lint_cmd"
+  },
+  "git": {
+    "base_branch": "$base_branch",
+    "claude_signature": false,
+    "user": {
+      "name": "$git_user_name",
+      "email": "$git_user_email"
+    }
+  },
+  "tasks": {
+    "location": "$TASK_LOCATION",
+    "next_number": ${NEXT_NUMBER:-1}
+  }
+}
 EOF
+
+echo -e "${GREEN}✓${NC} Created .agentshell.config.json"
 
 # Create current.json
-cat > .state/current.json << EOF
+cat > .state/current.json <<EOF
 {
-  "version": "1.0.0",
+  "version": "2.0",
   "updated": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-  "repository": "$PROJECT_NAME",
+  "repository": "$REPOSITORY_NAME",
   "remote": null,
-  "branch": "main",
+  "branch": "$base_branch",
   "current_task": null,
   "last_completed": null,
-  "next_number": 1,
-  "agentshell_version": "1.0.0"
+  "next_number": ${NEXT_NUMBER:-1},
+  "agentshell_version": "2.0.0"
 }
 EOF
 
-# Create empty queue
-echo '{"pending": []}' > .state/queue/pending.json
+echo -e "${GREEN}✓${NC} Created .state/current.json"
 
-# Create empty graph
-echo '{"tasks": {}, "dependencies": {}}' > .state/graph/tasks.json
-
-# Create cache placeholder
-touch .state/cache/.gitkeep
-
-print_success "Created .state/ structure"
-
-# docs/ - Repository knowledge (git-tracked)
-print_info "Creating docs/ structure..."
-mkdir -p docs/{agents,context,tasks,progress,sessions}
-
-# Copy agent templates from .context
-if [ -f "$CONTEXT_DIR/agents/AANG.md" ]; then
-    cp "$CONTEXT_DIR/agents/AANG.md" docs/agents/
-
-    # Customize with project name
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS sed syntax
-        sed -i '' "s/Cast Club/$PROJECT_NAME/g" docs/agents/AANG.md
-    else
-        # Linux sed syntax
-        sed -i "s/Cast Club/$PROJECT_NAME/g" docs/agents/AANG.md
-    fi
-
-    print_success "Created docs/agents/AANG.md"
-fi
-
-if [ -f "$CONTEXT_DIR/agents/MO.md" ]; then
-    cp "$CONTEXT_DIR/agents/MO.md" docs/agents/
-
-    # Customize with project name
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed -i '' "s/Cast Club/$PROJECT_NAME/g" docs/agents/MO.md
-    else
-        sed -i "s/Cast Club/$PROJECT_NAME/g" docs/agents/MO.md
-    fi
-
-    print_success "Created docs/agents/MO.md"
-fi
-
-# Copy patterns template
-if [ -f "$CONTEXT_DIR/bilal/PATTERNS.md" ]; then
-    cp "$CONTEXT_DIR/bilal/PATTERNS.md" docs/context/
-    print_success "Created docs/context/PATTERNS.md"
-fi
-
-# Create sessions INDEX.md
-cat > docs/sessions/INDEX.md << 'INDEXEOF'
-# Session Index
-
-Quick reference to all distilled sessions for this project.
-
----
-
-## Sessions
-
-| Date | Session | Agent | Keywords |
-|------|---------|-------|----------|
-| _No sessions yet_ | - | - | - |
-
----
-
-## How to Distill a Session
-
-After completing a Claude Code session:
-
-```bash
-# List recent sessions
-~/.context/scripts/distill-session.sh --list
-
-# Distill the latest session
-~/.context/scripts/distill-session.sh --latest
-
-# OR distill a specific session
-~/.context/scripts/distill-session.sh <session-id>
-```
-
-This creates a draft in `docs/sessions/*.draft.md` for review.
-
-After review:
-```bash
-# Finalize (remove .draft)
-mv docs/sessions/YYYY-MM-DD-topic.draft.md docs/sessions/YYYY-MM-DD-topic.md
-
-# Update this INDEX.md with the new entry
-
-# Commit
-git add docs/sessions/
-git commit -m "docs: Add session summary for [topic]"
-```
-
----
-
-**AgentShell v1.0.0** | Project Documentation
-INDEXEOF
-
-print_success "Created docs/sessions/INDEX.md"
-
-# Create project README
-cat > docs/README.md << EOF
-# $PROJECT_NAME Documentation
-
-AgentShell-powered development for $PROJECT_NAME.
-
----
-
-## Structure
-
-\`\`\`
-docs/
-├── agents/           # Agent configurations
-│   ├── AANG.md      # Planning agent
-│   └── MO.md        # Execution agent
-├── context/         # Project patterns & conventions
-│   └── PATTERNS.md
-├── tasks/           # Task specifications
-├── progress/        # Session logs
-└── sessions/        # Notable AI sessions
-\`\`\`
-
----
-
-## Quick Start
-
-1. **Start Planning Session** (Aang - Opus)
-   \`\`\`bash
-   claude-code --model opus
-   # Load docs/agents/AANG.md context
-   # Bilal describes requirements in prose
-   # Aang creates task files in docs/tasks/
-   \`\`\`
-
-2. **Execute Tasks** (M-O - Sonnet)
-   \`\`\`bash
-   claude-code --model sonnet
-   # Load docs/agents/MO.md context
-   # M-O executes from task files
-   # Updates .state/current.json
-   \`\`\`
-
----
-
-## Philosophy
-
-- **Docs as State**: Documentation drives execution
-- **Prose → Task → Code**: Clear chain from idea to implementation
-- **Scope is Sacred**: Only modify what task specifies
-- **Git First**: Machines are ephemeral, git is truth
-
----
-
-Project Type: $PROJECT_TYPE
-AgentShell Version: 1.0.0
+# Create pending.json
+cat > .state/queue/pending.json <<EOF
+{
+  "version": "2.0",
+  "updated": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+  "tasks": []
+}
 EOF
 
-print_success "Created docs/ structure"
+echo -e "${GREEN}✓${NC} Created .state/queue/pending.json"
 
-# Create .gitignore
-print_info "Creating .gitignore..."
-cat > .gitignore << 'EOF'
-# AgentShell execution state (ephemeral, machine-local)
+# Create .git/info/exclude
+mkdir -p .git/info
+if [ "$MODE" = "jira" ]; then
+    cat > .git/info/exclude <<EOF
+# AgentShell v2.0 (Jira Mode)
+# ONLY CODE in git - ZERO documentation
+.agentshell.config.json
+.docs/
 .state/
-
-# Dependencies (varies by project type)
-node_modules/
-vendor/
-venv/
-__pycache__/
-*.pyc
-
-# Environment
-.env
-.env.local
-*.env
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# OS
-.DS_Store
-Thumbs.db
 EOF
-
-print_success "Created .gitignore"
-
-# Create project README
-print_info "Creating project README..."
-cat > README.md << EOF
-# $PROJECT_NAME
-
-[Brief description of your project]
-
----
-
-## Tech Stack
-
-- Type: $PROJECT_TYPE
-- AgentShell: v1.0.0
-
----
-
-## Getting Started
-
-[Installation and setup instructions]
-
----
-
-## Development
-
-This project uses **AgentShell** for AI-augmented development.
-
-### Planning (Aang - Opus)
-\`\`\`bash
-claude-code --model opus
-\`\`\`
-
-### Execution (M-O - Sonnet)
-\`\`\`bash
-claude-code --model sonnet
-\`\`\`
-
-See [docs/README.md](docs/README.md) for full AgentShell workflow.
-
----
-
-## License
-
-[Your license]
-EOF
-
-print_success "Created README.md"
-
-# Initial git commit
-print_info "Creating initial commit..."
-git add .
-git commit -q -m "init: Bootstrap AgentShell structure
-
-🤖 Generated with [AgentShell](https://github.com/BilalMahmud12/.context)
-
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
-print_success "Initial commit created"
-
-# Update ~/.context/repository.json
-print_info "Registering project in .context/repository.json..."
-
-# Check if repository.json exists
-if [ ! -f "$CONTEXT_DIR/repository.json" ]; then
-    print_error "repository.json not found at $CONTEXT_DIR/repository.json"
-    echo ""
-    echo "Please manually add this project to repository.json:"
-    echo ""
-    echo "  \"$PROJECT_NAME\": {"
-    echo "    \"name\": \"$PROJECT_NAME\","
-    echo "    \"remote\": null,"
-    echo "    \"local_path\": \"$PROJECT_PATH\","
-    echo "    \"type\": \"$PROJECT_TYPE\","
-    echo "    \"status\": \"active\","
-    echo "    \"agentshell_version\": \"1.0.0\""
-    echo "  }"
 else
-    # Use Python to update JSON (more reliable than sed/jq)
-    python3 << PYTHON_SCRIPT
-import json
-import os
-
-repo_file = "$CONTEXT_DIR/repository.json"
-
-with open(repo_file, 'r') as f:
-    data = json.load(f)
-
-# Add new repository
-data['repositories']['$PROJECT_NAME'] = {
-    'name': '$PROJECT_NAME',
-    'remote': None,
-    'local_path': '$PROJECT_PATH',
-    'type': '$PROJECT_TYPE',
-    'status': 'active',
-    'agents': {
-        'aang': True,
-        'mo': True,
-        'zuko': False
-    },
-    'current_branch': 'main',
-    'agentshell_version': '1.0.0'
-}
-
-# Update timestamp
-from datetime import datetime
-data['updated'] = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
-
-with open(repo_file, 'w') as f:
-    json.dump(data, f, indent=2)
-    f.write('\n')
-
-print('✓ Updated repository.json')
-PYTHON_SCRIPT
-
-    print_success "Registered in repository.json"
+    cat > .git/info/exclude <<EOF
+# AgentShell v2.0 (Simple Mode)
+.agentshell.config.json
+.docs/
+.state/
+EOF
 fi
 
-# Summary
-print_header "Bootstrap Complete"
+echo -e "${GREEN}✓${NC} Updated .git/info/exclude"
 
-echo "Project: $PROJECT_NAME"
-echo "Path: $PROJECT_PATH"
 echo ""
-echo "Next steps:"
+echo -e "${GREEN}╔════════════════════════════════╗${NC}"
+echo -e "${GREEN}║   AgentShell v2.0 Ready!       ║${NC}"
+echo -e "${GREEN}╚════════════════════════════════╝${NC}"
 echo ""
-echo "  1. cd $PROJECT_PATH"
-echo "  2. Create GitHub repo (if needed):"
-echo "     gh repo create $PROJECT_NAME --private --source=."
-echo "  3. Push initial commit:"
-echo "     git remote add origin git@github.com:YOUR_USERNAME/$PROJECT_NAME.git"
-echo "     git push -u origin main"
-echo "  4. Start planning with Aang (Opus):"
-echo "     claude-code --model opus"
+echo "Agents (4):"
+echo "  /aang:plan     - Strategic planning (Opus)"
+echo "  /aang:task     - Task writing (Sonnet)"
+echo "  /mo:turbo      - Standard execution (Sonnet)"
+echo "  /mo:eco        - Cost-efficient execution (Haiku)"
+echo ""
+echo "Commands (18):"
+echo ""
+echo "State & Queue:"
+echo "  /task:close    - Close current task"
+echo "  /task:queue    - Add task to queue"
+echo "  /task:start    - Start specific task"
+echo "  /task:list     - List pending tasks"
+echo "  /task:remove   - Remove from queue"
+echo ""
+echo "Sessions:"
+echo "  /distill       - Distill session"
+echo "  /session:save  - Save snapshot"
+echo "  /session:list  - List sessions"
+echo ""
+echo "Context:"
+echo "  /context:task  - Load task context"
+echo "  /history       - Show completed tasks"
+echo ""
+echo "Git:"
+echo "  /branch:clean  - Clean merged branches"
+echo "  /commit:amend  - Amend last commit"
+echo ""
+echo "Reports:"
+echo "  /report:daily  - Daily summary"
+echo "  /report:phase  - Phase progress"
+echo ""
+echo "Skills (2):"
+echo "  /commit        - Smart commit workflow"
+echo "  /pr            - Pull request creation"
 echo ""
 
-print_success "Ready for AgentShell development!"
+if [ "$MIGRATION" = "true" ]; then
+    echo -e "${BLUE}Migration complete!${NC}"
+    echo ""
+    if [ "$MIGRATION_TYPE" = "kernel" ]; then
+        echo "Rollback: Restore from .kernel-archive-*/ and .channel-archive-*/"
+    elif [ "$MIGRATION_TYPE" = "agentshell_v1" ]; then
+        echo "Your docs/agents/ files are preserved as documentation"
+        echo "Executable agents are in ~/.claude/ (copied from ~/.context/)"
+    fi
+    echo ""
+fi
