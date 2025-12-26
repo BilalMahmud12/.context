@@ -1,0 +1,36 @@
+{
+  "version": "1.0.0",
+  "updated": "2024-12-26T03:40:00Z",
+  "repositories": {
+    "agentsshell": {
+      "name": "AgentsShell Framework",
+      "remote": "git@github.com:BilalMahmud12/agentsshell.git",
+      "local_path": "~/Repository/agentsshell",
+      "type": "docs",
+      "status": "active",
+      "agents": {
+        "aang": true,
+        "mo": false,
+        "zuko": false
+      },
+      "current_branch": "main",
+      "agentsshell_version": "1.0.0"
+    },
+    "castclub": {
+      "name": "Cast Club",
+      "remote": "git@github.com:BilalMahmud12/castclub.git",
+      "local_path": "~/Repository/castclub",
+      "type": "laravel",
+      "status": "active",
+      "agents": {
+        "aang": true,
+        "mo": true,
+        "zuko": false
+      },
+      "current_branch": "main",
+      "last_task": "049",
+      "next_task": "050",
+      "agentsshell_version": "1.0.0"
+    }
+  }
+}
